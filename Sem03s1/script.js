@@ -9,12 +9,51 @@ var balas;
 var tiempoBala=0;
 var botonDisparo;
 
+// NUEVO: Estado de inicio
+var estadoInicio = {
+    preload: function() {
+        juego.load.image('fondo', 'imagenes/img1.png');
+        juego.load.audio('musica', 'sonidos/musica.mp3');
+    },
+    create: function() {
+        fondoJuego = juego.add.tileSprite(0,0,370,900,'fondo');
+
+        var nombre = juego.add.text(juego.world.centerX, 300, 'Daniel Purizaca', {
+            font: '32px Arial',
+            fill: '#ffffff'
+        });
+        nombre.anchor.setTo(0.5);
+
+        var boton = juego.add.text(juego.world.centerX, 500, 'Iniciar Juego', {
+            font: '28px Arial',
+            fill: '#ff0000',
+            backgroundColor: '#ffffff',
+            padding: 10
+        });
+        boton.anchor.setTo(0.5);
+        boton.inputEnabled = true;
+        boton.input.useHandCursor = true;
+        boton.events.onInputDown.add(this.iniciarJuego, this);
+
+        // Música de fondo
+        this.musica = juego.add.audio('musica');
+        this.musica.loop = true;
+        this.musica.play();
+    },
+    iniciarJuego: function() {
+        this.musica.stop();
+        juego.state.start('principal');
+    }
+};
+
 var estadoPrincipal={
     preload: function () {
         juego.load.image('fondo', 'imagenes/img1.png');
         juego.load.spritesheet('personaje', 'imagenes/spritesheet1.png', 256,256);
         juego.load.spritesheet('enemigo', 'imagenes/enemigo1.png',416,416);
         juego.load.image('laser','imagenes/laser.png');
+        juego.load.audio('disparo', 'sonidos/disparo.mp3');
+        juego.load.audio('explosion', 'sonidos/explosion.mp3');
     },
     create: function () {
         fondoJuego= juego.add.tileSprite(0,0,370,900, 'fondo');
@@ -53,6 +92,8 @@ var estadoPrincipal={
         teclaDerecha = juego.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
         teclaIzquierda = juego.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 
+        sonidoDisparo = juego.add.audio('disparo');
+        sonidoExplosion = juego.add.audio('explosion');
     },
     update: function() {
         if(teclaDerecha.isDown){
@@ -72,6 +113,7 @@ var estadoPrincipal={
                 bala.reset(personaje.x+92, personaje.y+100);
                 bala.body.velocity.y=-300;
                 tiempoBala=juego.time.now+200;
+                sonidoDisparo.play();
             }
         }
         juego.physics.arcade.overlap(balas,enemigos,colision,null,this);
@@ -81,7 +123,12 @@ var estadoPrincipal={
 function colision (bala,enemigo){
     bala.kill();
     enemigo.kill();
+    sonidoExplosion.play();
 }
 
-juego.state.add('principal',estadoPrincipal);
-juego.state.start('principal')
+// Cargamos ambos estados
+juego.state.add('inicio', estadoInicio);
+juego.state.add('principal', estadoPrincipal);
+
+// Empezamos por la pantalla de inicio
+juego.state.start('inicio');
