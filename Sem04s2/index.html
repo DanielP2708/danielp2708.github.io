@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Juego HS - 2 Niveles</title>
+    <style>
+        /*estilos básicos del juego*/
+        body {
+            margin:0;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+        footer {
+            position: absolute;
+            bottom: 10px;
+            color: white;
+            font-size: 14px;
+        }
+        canvas {
+            border: 3px solid #fff;
+            background: #222;
+        }
+    </style>
+</head>
+<body>
+    <!-- Lienzo donde se dibuja el juego -->
+    <canvas id="game" width="600" height="400"></canvas>
+    <footer> Daniel Justo Purizaca Sánchez</footer>
+    <audio id="collision-sound" src="collision.mp3"></audio>
+
+    <script>
+        // Referencia al lienzo y su contexto de dibujo 2D
+        const canvas = document.getElementById('game')
+        const ctx = canvas.getContext('2d');
+        const collisionSound = document.getElementById("collision-sound");
+
+        //Objeto para rastrear teclas presionadas
+        let keys  ={};
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Definición del jugador
+        const player = { x: 50, y: 50, w: 30, h: 30, color: 'red', speed: 3}
+
+        //Definición de los niveles con obstáculos y monedas
+        const levels= [
+            {
+                obstacles:[
+                    { x:100, y:150, w:400, h:20},
+                    { x:300, y:250, w:20, h:100}
+                ],
+                coins: [
+                    { x:500, y:50, collected: false },
+                    { x:50, y:300, collected: false}
+                ]
+            },
+            {
+                obstacles:[
+                    { x:200, y:100, w:200, h:20},
+                    { x:200, y:200, w:20, h:100},
+                    { x:400, y:200, w:20, h:100}
+                ],
+                coins: [
+                    { x:500, y:50, collected: false },
+                    { x:550, y:350, collected: false},
+                    { x:300, y:180, collected: false}
+                ]
+            },
+            {
+                obstacles: [
+                    { x: 100, y: 100, w: 400, h: 20 },
+                    { x: 100, y: 200, w: 200, h: 20 },
+                    { x: 100, y: 100, w: 20, h: 220 },
+                    { x: 480, y: 100, w: 20, h: 220 }
+                ],
+                coins: [
+                    { x: 120, y: 120, collected: false },
+                    { x: 460, y: 120, collected: false },
+                    { x: 120, y: 280, collected: false },
+                    { x: 460, y: 280, collected: false }
+                ]
+            }
+
+        ];
+
+        //Indice del nivel actual
+        let currentLevel = 0;
+
+        //Funcion de detectar colisiones entre dos rectángulos
+        function rectsCollide(a,b) {
+            return(
+                a.x < b.x + b.w &&
+                a.x + a.w > b.x &&
+                a.y < b.y + b.h &&
+                a.y + a.h > b.y
+            );
+        }
+        
+        //Funcion para dibujar un rectángbulo (jugador u obstáculo)
+        function drawRect(obj) {
+            ctx.fillStyle = obj.color || 'white';
+            ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+
+        //funcion que actualiza la lógica del juego
+        function update(){
+            const level = levels[currentLevel];
+
+            let prevX = player.x;
+            let prevY = player.y;
+
+            //Movimiento del jugador segun las teclas presionadas
+            if(keys['ArrowUp']) player.y -= player.speed;
+            if(keys['ArrowDown']) player.y += player.speed;
+            if(keys['ArrowLeft']) player.x -= player.speed;
+            if(keys['ArrowRight']) player.x += player.speed;
+
+            // Colisión con bordes del canvas
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.h > canvas.height) player.y = canvas.height - player.h;
+
+            //Comprobacion de colision con obstáculos y retroceso del movimiento
+            for (let obs of level.obstacles) {
+                if (rectsCollide(player, obs)) {
+                    if(keys['ArrowUp']) player.y += player.speed;
+                    if(keys['ArrowDown']) player.y -= player.speed;
+                    if(keys['ArrowLeft']) player.x += player.speed;
+                    if(keys['ArrowRight']) player.x -= player.speed;
+                }
+            }
+            
+            //Comprobación de colision con monedas y recoleccion
+            for (let coin of level.coins) {
+                if (!coin.collected) {
+                    if(
+                        player.x < coin.x + 15 &&
+                        player.x + player.w > coin.x &&
+                        player.y < coin.y + 15 &&
+                        player.y + player.h > coin.y
+                    ) {
+                        coin.collected = true; // Marca la moneda como recogida
+                        collisionSound.play();
+                    }
+                }
+            }
+            
+            //Verifica si todas las monedas del nivel han sido recogidas
+            const allCollected = level.coins.every(c => c.collected);
+            if (allCollected) {
+                if (currentLevel < levels.length - 1) {
+                    currentLevel++; //Avanza al siguiente nivel
+                    resetLevel(); //Reinicia la posicion del jugador y monedas
+                } else {
+                    //Fin del juego: muestra mensaje y reinicia
+                    alert("🎉 ¡Felicitaciones Daniel Purizaca!");
+                    currentLevel = 0;
+                    resetLevel();
+                }
+            }
+        }
+
+        //funcion para reiniciar la posicion del jugador y el estado de las monedas
+        function resetLevel() {
+            player.x = 50;
+            player.y = 50;
+            levels[currentLevel].coins.forEach(c => c.collected = false);
+        }
+
+        //Funcion que dibuja todos los elementos del juego
+        function draw() {
+            //Limpia el lienzo
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+
+            //Dibuja al jugador
+            drawRect(player);
+
+            const level = levels[currentLevel];
+
+            //Dibuja los obstáculos
+            for(let obs of level.obstacles) {
+                drawRect({ ...obs, color: 'gray'})
+            }
+
+            //Dibuja las monedas no recogidas
+            for(let coin of level.coins) {
+                if(!coin.collected) {
+                    ctx.fillStyle = 'gold';
+                    ctx.beginPath();
+                    ctx.arc(coin.x + 7.5, coin.y +7.5, 7.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            //Muestra el numero del nivel actual
+            ctx.fillStyle = 'white';
+            ctx.fillText(`Nivel: ${currentLevel + 1}`, 10, 20);
+        }
+
+    //Bucle principal del juego (actualiza y dibuja en cada frame)
+        function gameLoop(){
+                update();
+                draw();
+                requestAnimationFrame(gameLoop); // Ejecuta de nuevo en el siguienteframe
+            }
+        gameLoop();
+    </script>
+    
+</body>
+</html>
