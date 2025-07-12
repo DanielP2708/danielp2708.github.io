@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <title>Juego Luz Roja</title>
+  <link rel="stylesheet" href="css/juego.css">
+</head>
+<body>
+  <h1>Luz Roja - Detenga los que se muevan</h1>
+  <p id="estado">Esperando a que diga "Luz roja"...</p>
+  <div id="gameArea"></div>
+  <div id="hud">
+    <p>🟢 <span id="vivos">Jugadores vivos: 0</span></p>
+    <p>✅ <span id="eliminados">Correctamente eliminados: 0</span></p>
+    <p>❌ <span id="injustos">Eliminados injustamente: 0</span></p>
+    <button onclick="location.href='index.html'">Volver</button>
+  </div>
+  <script>
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  </script>
+  <script src="js/juego.js"></script>
+</body>
+</html>
